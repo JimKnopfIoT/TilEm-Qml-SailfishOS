@@ -1,0 +1,26 @@
+# Build artifacts
+*.o
+*.a
+*.so
+moc_*.cpp
+moc_*.h
+Makefile
+.qmake.stash
+.moc/
+.obj/
+build-container/
+build-native/
+installroot/
+RPMS/
+*.tar.bz2
+
+# qmake / SDK build backups
+*.hacked-*
+.mb2/
+
+# compiled binary
+src/harbour-tilem
+
+# editor / OS
+*~
+.DS_Store

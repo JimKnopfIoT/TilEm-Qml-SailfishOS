@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Name=TilEm
+Icon=harbour-tilem
+Exec=harbour-tilem
+
+[X-Sailjail]
+Permissions=Documents;Downloads;RemovableMedia;UserDirs
+OrganizationName=harbour-tilem
+ApplicationName=harbour-tilem
