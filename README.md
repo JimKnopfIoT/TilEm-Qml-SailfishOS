@@ -50,3 +50,21 @@ matters.)
 
 All calculator skins are bundled under `data/skins/*.skn` and install to
 `/usr/share/harbour-tilem/skins/`.
+
+## License
+
+This project is licensed under the **GNU General Public License v3** — see
+[`COPYING`](COPYING) (also available as `LICENSE`) for the full text.
+
+It is a derivative work built from:
+
+- **libtilemcore** (`tilem-core/`) — © 2009–2011 Benjamin Moody and the TilEm
+  authors, **GNU LGPL v2.1 or later**;
+- the **TilEm-Qml** Qt frontend (`backend/`, `src/`) — © 2009–2010
+  Hugues Luc BRUANT (*fullmetalcoder*) and contributors, **GNU GPL v3**.
+
+Because GPL-v3-licensed code is linked into the application, the combined work as
+a whole is distributed under **GPL v3**. The per-file copyright and license
+headers of the original authors are preserved in the source. Upstreams:
+[SeSamSeg/TilEm-Qml](https://github.com/SeSamSeg/TilEm-Qml) ·
+[labsin/TilEm-Qml](https://github.com/labsin/TilEm-Qml).
