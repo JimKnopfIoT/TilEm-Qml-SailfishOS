@@ -1,0 +1,4 @@
+add_subdirectory(modules)
+
+set("${TILEM_TARGET}_FILES" ${${TILEM_TARGET}_FILES} PARENT_SCOPE)
+set("${UTILS_TARGET}_FILES" ${${UTILS_TARGET}_FILES} PARENT_SCOPE)

@@ -1,0 +1,25 @@
+#include <QtQml>
+#include <QtQml/QQmlContext>
+#include "backend.h"
+#include "calc.h"
+#include "calcscreen.h"
+#include "skin.h"
+#include "skinimage.h"
+
+const QLatin1String BackendPlugin::URI = QLatin1String("@TILEM_URI@");
+
+void BackendPlugin::registerTypes(const char *uri)
+{
+    Q_ASSERT(uri == URI);
+
+    // @uri @TILEM_URI@
+    qmlRegisterType<Calc>(uri, VERSION_MAJOR, VERSION_MINOR, "Calc");
+    qmlRegisterType<CalcScreen>(uri, VERSION_MAJOR, VERSION_MINOR, "CalcScreen");
+    qmlRegisterType<Skin>(uri, VERSION_MAJOR, VERSION_MINOR, "Skin");
+    qmlRegisterType<SkinImage>(uri, VERSION_MAJOR, VERSION_MINOR, "SkinImage");
+}
+
+void BackendPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
+{
+    QQmlExtensionPlugin::initializeEngine(engine, uri);
+}
