@@ -303,6 +303,10 @@ void Calc::pressKey(int keycode)
 {
     qDebug() << "*** CALC::PRESSKEY CALLED! Keycode:" << keycode << "Valid:" << isValid();
     if(isValid()) {
+        // Serialize keypad access against the emulator thread (run() holds m_run).
+        // Without this lock, modifying m_calc->keypad while the Z80 core runs on
+        // the CalcThread races the calc state and corrupts it on ARM64 -> freeze.
+        QMutexLocker lock(&m_run);
         tilem_keypad_press_key(m_calc, keycode);
         qDebug() << "*** tilem_keypad_press_key() completed for keycode" << keycode;
     } else {
@@ -318,8 +322,11 @@ void Calc::pressKey(int keycode)
 void Calc::releaseKey(int keycode)
 {
     qDebug() << "Calc: release " << keycode;
-    if(isValid())
+    if(isValid()) {
+        // Same reason as pressKey(): serialize against the emulator thread.
+        QMutexLocker lock(&m_run);
         tilem_keypad_release_key(m_calc, keycode);
+    }
 }
 
 // NOV 11 2025: Removed injectTimerInterrupt() function - DEAD CODE
@@ -527,6 +534,13 @@ void Calc::load(const QString &file)
         connect(m_thread, SIGNAL( finished() ), this, SIGNAL( paused() ) );
         connect(m_thread, SIGNAL( runningChanged(bool) ), this, SIGNAL( paused(bool) ) );
     }
+
+    // Release m_run before the restart phase. emit loaded() below runs its
+    // connected slots synchronously on this thread, and CalcScreen::fileLoaded()
+    // forces an immediate updateLCD() -> lcdUpdate(), which now locks m_run.
+    // Holding it across the emit would self-deadlock (m_run is non-recursive).
+    // The emulator thread started below acquires m_run itself, so it must be free.
+    lock.unlock();
 
     /// 3) restart phase
 
@@ -937,6 +951,12 @@ void Calc::stop(int reason)
  */
 bool Calc::lcdUpdate()
 {
+    // Runs on the GUI thread every ~10 ms. It reads m_calc (lcd/z80 state) and
+    // calls hw.get_lcd(), which walks calc memory. The emulator thread mutates
+    // exactly that state under m_run, so read it under the same lock to avoid a
+    // data race with the running Z80 core.
+    QMutexLocker lock(&m_run);
+
     if ( m_load_lock || !m_calc )
         return false;
 

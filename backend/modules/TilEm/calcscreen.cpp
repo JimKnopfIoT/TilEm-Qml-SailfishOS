@@ -4,6 +4,8 @@
 #include <QPainter>
 #include <QDebug>
 
+#include <cstring>
+
 #include "calc.h"
 
 CalcScreen::CalcScreen(QQuickItem *parent) :
@@ -25,9 +27,13 @@ CalcScreen::~CalcScreen()
 
 void CalcScreen::paint(QPainter *painter)
 {
-    QRectF target = contentsBoundingRect();
-    QRectF source(0.0, 0.0, m_lcdW, m_lcdH);
-    painter->drawImage(target,m_screen,source);
+    if (m_screen.isNull())
+        return;
+
+    // m_screen holds the calculator's native-resolution LCD (e.g. 96x64).
+    // Scale it up to the item here (nearest-neighbour = crisp pixels) on the
+    // render thread, instead of scaling per-pixel on the GUI thread every frame.
+    painter->drawImage(contentsBoundingRect(), m_screen, m_screen.rect());
 }
 
 Calc *CalcScreen::calc() const
@@ -42,8 +48,9 @@ void CalcScreen::setLcd()
     m_lcdW = (int)width();
     m_lcdH = (int)height();
     qDebug() << "setLcd: " << m_lcdW << "x" << m_lcdH;
-    m_screen = QImage(m_lcdW,m_lcdH, QImage::Format_RGB32);
-    m_screen.fill(Qt::black);  // Initialize with black instead of random data
+    // m_screen is allocated at the native LCD resolution by updateLCD(); the item
+    // size (m_lcdW/m_lcdH) only drives the scale done in paint(). Nothing to do
+    // here on resize - paint() rescales the existing native image automatically.
 
     // FIX (Oct 14, 2025 21:42 UTC): Don't call updateLCD() during initialization
     // setLcd() is called from width/heightChanged signals during QML construction
@@ -72,8 +79,9 @@ void CalcScreen::fileLoaded()
         killTimer(m_lcdTimerId);
     }
 
-    // start LCD update timer
-    m_lcdTimerId = startTimer(10);
+    // start LCD update timer (~30 Hz is plenty for a calculator LCD; 100 Hz
+    // wasted CPU on the GUI thread and hurt touch latency)
+    m_lcdTimerId = startTimer(33);
     qDebug() << "LCD timer ID:" << m_lcdTimerId;
 
     // Force an immediate update
@@ -121,31 +129,26 @@ void CalcScreen::updateLCD()
     if(!m_calc)
         return;
 
-    // lcdUpdate() has a side effect: it refreshes the internal LCD pixel
-    // buffer via the hardware get_lcd callback, so it must be called even
-    // though we always render regardless of its return value.
-    m_calc->lcdUpdate();
-
-    if(m_lcdW <= 0 || m_lcdH <= 0)
-        return;
+    // lcdUpdate() refreshes the composite LCD buffer via the hardware get_lcd
+    // callback and returns whether the pixels actually changed this frame.
+    const bool changed = m_calc->lcdUpdate();
 
     const int w = m_calc->lcdWidth();
     const int h = m_calc->lcdHeight();
     const unsigned int *cd = m_calc->lcdData();
+    if(w <= 0 || h <= 0 || !cd)
+        return;
 
-    QRgb *d = reinterpret_cast<QRgb*>(m_screen.bits());
+    // Keep the image at the NATIVE LCD resolution and let paint() scale it.
+    // (Re)allocate only when the source size changes; otherwise skip the whole
+    // frame when nothing changed - an idle calculator then costs almost nothing.
+    if(m_screen.width() != w || m_screen.height() != h)
+        m_screen = QImage(w, h, QImage::Format_RGB32);
+    else if(!changed)
+        return;
 
-    // write (scaled) LCD into screen image
-    for ( int i = 0; i < m_lcdH; ++i )
-    {
-        for ( int j = 0; j < m_lcdW; ++j )
-        {
-            int y = (h * i) / m_lcdH;
-            int x = (w * j) / m_lcdW;
+    // Composite buffer is already ARGB (qRgb), matching Format_RGB32 - just copy.
+    memcpy(m_screen.bits(), cd, static_cast<size_t>(w) * h * sizeof(quint32));
 
-            d[i * m_lcdW + j] = cd[y * w + x];
-        }
-    }
-
-    update(boundingRect().toAlignedRect());
+    update();
 }
