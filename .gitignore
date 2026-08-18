@@ -24,3 +24,5 @@ src/harbour-tilem
 # editor / OS
 *~
 .DS_Store
+/harbour-tilem
+documentation.list
