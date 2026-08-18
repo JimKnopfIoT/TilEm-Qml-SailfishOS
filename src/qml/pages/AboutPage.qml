@@ -33,7 +33,7 @@ Page {
 
             Label {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "v0.3.0"
+                text: "v1.0.1"
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
             }

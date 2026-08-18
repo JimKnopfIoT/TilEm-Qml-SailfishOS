@@ -1,10 +1,11 @@
 Name:       harbour-tilem
+%define _buildhost reproducible-builder
 Summary:    TI Calculator Emulator for SailfishOS
-Version:    0.3.0
+Version:    1.0.1
 Release:    1
 Group:      Applications/Productivity
 License:    GPLv3+ and LGPLv2+
-URL:        https://github.com/labsin/TilEm-Qml
+URL:        https://github.com/JimKnopfIoT/TilEm-Qml-SailfishOS
 Source0:    %{name}-%{version}.tar.bz2
 
 BuildRequires:  pkgconfig(Qt5Core)
@@ -69,3 +70,10 @@ install -m 0644 data/keybindings.ini %{buildroot}%{_datadir}/%{name}/data/
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
+
+%changelog
+* Tue Aug 18 2026 harbour-tilem contributors 1.0.1-1
+- Release build with a neutral build host and the fork's repository in the
+  package header, and incidental author metadata scrubbed from the bundled
+  calculator skins. First version offered on OpenRepos. No change to the
+  emulator itself.
