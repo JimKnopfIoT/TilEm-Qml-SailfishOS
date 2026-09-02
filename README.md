@@ -1,13 +1,18 @@
 # TilEm-Qml — SailfishOS port (working)
 
-TI-83 calculator emulator running on **SailfishOS** (tested on Sony Xperia 10 III,
-aarch64, SailfishOS 5.1.0.7 and 5.1.0.8; built against the
-`SailfishOS-5.0.0.62-aarch64` target).
+TI-83 calculator emulator running on **SailfishOS**, aarch64. Tested on the
+Jolla Phone (2026) under SailfishOS 5.2.0.17 and on the Sony Xperia 10 III under
+5.1.0.7 through 5.1.0.11.
 
 This is a port of [labsin/TilEm-Qml](https://github.com/labsin/TilEm-Qml)
 (itself based on the [TilEm](https://github.com/labsin/TilEm) Z80 core) to the
 SailfishOS / harbour Qt environment. **The emulator boots and runs** (cursor,
 "Mem cleared", calculations work).
+
+| | |
+|---|---|
+| ![The TI-83 just after a memory reset, showing "Mem cleared"](media/TilEm-Memory.png) | ![Text typed on the emulated calculator through the ALPHA key](media/TilEm-J2.png) |
+| Fresh boot, memory cleared | Typing through the on-screen keypad |
 
 ## The decisive fix (the long-hunted "ARM64 bug")
 
@@ -27,6 +32,14 @@ register macros.
 
 ```bash
 ./build-and-deploy.sh        # mb2 build → RPM → scp → install on device
+```
+
+Set `DEVICE_IP` at the top of the script to your device. The Platform SDK path
+and build target default to `~/SailfishOS-Platform-SDK` and
+`SailfishOS-5.2.0.17-aarch64`; override them from the environment if yours differ:
+
+```bash
+SDK=~/my-sdk TARGET=SailfishOS-5.1.0.11-aarch64 ./build-and-deploy.sh
 ```
 
 The build uses `harbour-tilem.pro` (`SUBDIRS = tilem-core src`); the app sources
