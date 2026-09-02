@@ -38,7 +38,7 @@ contra-sh :
 #endif
 
 #include <stdint.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
+#include <glib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,12 +101,11 @@ typedef struct
 {
   int type;
 
-  GdkPixbuf *image;
-
-  int width;
+  int width;		// filled in by the caller after decoding
   int height;
 
-  GdkPixbuf *raw;	// raw jpeg image
+  guchar *jpeg_data;	// raw, still encoded image data
+  gsize jpeg_size;
   double sx, sy;		// scaling factor
 
   char calc[9];

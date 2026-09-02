@@ -1,7 +1,7 @@
 Name:       harbour-tilem
 %define _buildhost reproducible-builder
 Summary:    TI Calculator Emulator for SailfishOS
-Version:    1.0.1
+Version:    1.0.3
 Release:    1
 Group:      Applications/Productivity
 License:    GPLv3+ and LGPLv2+
@@ -14,11 +14,12 @@ BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(sailfishapp) >= 1.0.2
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(gobject-2.0)
-BuildRequires:  pkgconfig(gdk-pixbuf-2.0)
 BuildRequires:  desktop-file-utils
 
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   qt5-qtdeclarative-import-folderlistmodel
+# Skin images are JPEG and are decoded by Qt (gdk-pixbuf on SFOS has no JPEG loader)
+Requires:   qt5-plugin-imageformat-jpeg
 
 %description
 TilEm is an emulator for Texas Instruments Z80-based graphing calculators.
@@ -64,6 +65,10 @@ install -m 0644 data/skins/*.skn %{buildroot}%{_datadir}/%{name}/skins/
 mkdir -p %{buildroot}%{_datadir}/%{name}/data
 install -m 0644 data/keybindings.ini %{buildroot}%{_datadir}/%{name}/data/
 
+# The Sailfish qmake macro passes QMAKE_STRIP=: so the binary reaches the
+# buildroot with its symbol table intact. Strip it for the shipped package.
+strip --strip-unneeded %{buildroot}%{_bindir}/%{name}
+
 %files
 %defattr(-,root,root,-)
 %{_bindir}/%{name}
@@ -72,6 +77,14 @@ install -m 0644 data/keybindings.ini %{buildroot}%{_datadir}/%{name}/data/
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
 
 %changelog
+* Wed Sep 02 2026 harbour-tilem contributors 1.0.3-1
+- Decode the calculator skins with Qt instead of gdk-pixbuf. SailfishOS 5.2
+  ships gdk-pixbuf without a JPEG loader, so the skin failed to load and the
+  application came up as a black screen with only the bare LCD drawn. Drops the
+  gdk-pixbuf dependency entirely and adds qt5-plugin-imageformat-jpeg.
+- Fix the skin settings object keeping stale, uninitialised data after a failed
+  load, and leaking the previous skin on every reload.
+
 * Tue Aug 18 2026 harbour-tilem contributors 1.0.1-1
 - Release build with a neutral build host and the fork's repository in the
   package header, and incidental author metadata scrubbed from the bundled

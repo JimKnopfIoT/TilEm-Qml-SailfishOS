@@ -67,6 +67,8 @@ Settings::Settings() : m_private(NULL), m_image(0)
 
 Settings::~Settings()
 {
+    if(m_private)
+        skin_unload(m_private);
     delete m_private;
     delete m_image;
 }
@@ -173,36 +175,50 @@ bool Settings::load(const QString& file)
     qDebug() << "Settings: load";
     qDebug() << "Settings: trying to load file:" << file;
     delete m_image;
+    m_image = 0;
+    if(m_private) {
+        skin_unload(m_private);
+        delete m_private;
+        m_private = 0;
+    }
+    m_keyPos.clear();
 
     GError *err = NULL;
-    m_private = new SettingsPrivate;
-    int result = skin_load(m_private,file.toLocal8Bit().data(),&err);
+    SettingsPrivate *p = new SettingsPrivate();
+    int result = skin_load(p,file.toLocal8Bit().data(),&err);
     if(result != 0) {
         qDebug() << "Settings: couldn't load, error code:" << result;
         if(err) {
             qDebug() << "Settings: GError message:" << err->message;
             g_error_free(err);
         }
+        delete p;
         return false;
     }
     qDebug() << "Settings: skin_load successful!";
 
-    m_image = new QImage();
+    // The skin image is decoded by Qt, not by gdk-pixbuf: gdk-pixbuf is built
+    // without a JPEG loader on SailfishOS 5.2, so it cannot read our skins.
+    QImage im;
+    if(!im.loadFromData(p->jpeg_data, static_cast<int>(p->jpeg_size))) {
+        qDebug() << "Settings: couldn't decode skin image (" << p->jpeg_size << "bytes )";
+        skin_unload(p);
+        delete p;
+        return false;
+    }
+    p->width = im.width();
+    p->height = im.height();
+    m_private = p;
 
-    GdkPixbuf* pixbuf = m_private->raw;
-    const uchar* bdata = (const uchar*)gdk_pixbuf_get_pixels(pixbuf);
-    QSize bsize(gdk_pixbuf_get_width(pixbuf), gdk_pixbuf_get_height(pixbuf));
-    int stride = gdk_pixbuf_get_rowstride(pixbuf);
-
-    QImage im(bdata, bsize.width(), bsize.height(), stride, QImage::Format_RGB888 );
-    *m_image = im.rgbSwapped();
+    // Skin images are stored with red and blue swapped (TiEmu heritage), so the
+    // decoded data has to be channel-swapped to get the real colours back.
+    m_image = new QImage(im.rgbSwapped().convertToFormat(QImage::Format_RGB32));
     if(m_image->isNull()) {
          qDebug() << "Image Error";
          delete m_image;
+         m_image = 0;
          return false;
     }
-
-    m_keyPos.clear();
 
     for(int iii = 0; iii < SKIN_KEYS; iii++) {
         QRect r = transform(m_private->keys_pos[iii]);

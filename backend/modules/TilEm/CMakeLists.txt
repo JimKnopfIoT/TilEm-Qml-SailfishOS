@@ -25,7 +25,6 @@ qtcreator_add_project_resources(qmldir)
 find_package(Glib REQUIRED)
 find_package(GObject REQUIRED)
 find_package(LIBC REQUIRED)
-find_package(GDK-PixBuf REQUIRED)
 find_package(TiCalcs2 REQUIRED)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/backend.h.in ${CMAKE_CURRENT_BINARY_DIR}/backend.h)
@@ -37,7 +36,7 @@ if(NOT DEFINED EMU_TARGET)
 endif()
 include_directories(${${EMU_TARGET}_SOURCE_DIR})
 
-set(LIBS ${TiCalcs2_LIBRARIES} ${Glib_LIBRARIES} ${GObject_LIBRARIES} ${LIBC_LIBRARIES} ${GDK-PixBuf_LIBRARIES})
+set(LIBS ${TiCalcs2_LIBRARIES} ${Glib_LIBRARIES} ${GObject_LIBRARIES} ${LIBC_LIBRARIES})
 if(CLICK_MODE)
     deploy_libs(${LIBS})
 endif(CLICK_MODE)
@@ -52,7 +51,6 @@ include_directories(
     ${CMAKE_BINARY_DIR}
     ${Glib_INCLUDE_DIRS}
     ${GObject_INCLUDE_DIRS}
-    ${GDK-PixBuf_INCLUDE_DIRS}
     ${TiCalcs2_INCLUDE_DIRS}
     ${emu_SOURCE_DIR}
 )
