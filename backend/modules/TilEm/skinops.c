@@ -192,57 +192,42 @@ int skin_read_header(SKIN_INFOS *si, FILE *fp)
 
 /*
   Read skin image (pure jpeg data)
+
+  The image is not decoded here: gdk-pixbuf is not guaranteed to ship a JPEG
+  loader (SailfishOS 5.2 has none at all), so the encoded bytes are handed to
+  the caller, which decodes them with Qt.
 */
 int skin_read_image(SKIN_INFOS *si, FILE *fp, GError **err)
 {
-	GdkPixbufLoader *loader;
-	gboolean result;
 	guchar *buf;
 	gsize count;
 	struct stat st;
 
 	// Extract image from skin
-	fseek(fp, si->jpeg_offset, SEEK_SET);
-	fstat(fileno(fp), &st);
-	count = st.st_size - si->jpeg_offset;
-
-	buf = g_malloc(count * sizeof(guchar));
-	count = fread(buf, sizeof(guchar), count, fp);
-
-	// Feed the pixbuf loader with our jpeg data
-	loader = gdk_pixbuf_loader_new();
-	result = gdk_pixbuf_loader_write(loader, buf, count, err);
-	g_free(buf);
-
-	if(result == FALSE) {
-		g_object_unref(loader);
-		return -1;
-	}
-
-	result = gdk_pixbuf_loader_close(loader, err);
-	if(result == FALSE) {
-		g_object_unref(loader);
-		return -1;
-	}
-
-	// and get the pixbuf
-	si->raw = gdk_pixbuf_loader_get_pixbuf(loader);
-	if(si->raw == NULL) {
+	if (fseek(fp, si->jpeg_offset, SEEK_SET) != 0
+	    || fstat(fileno(fp), &st) != 0
+	    || st.st_size <= si->jpeg_offset) {
 		g_set_error(err, SKIN_ERROR, SKIN_ERROR_INVALID,
 		            _("Unable to load background image"));
-		g_object_unref(loader);
+		return -1;
+	}
+	count = st.st_size - si->jpeg_offset;
+
+	buf = g_malloc(count);
+	count = fread(buf, 1, count, fp);
+	if (count == 0) {
+		g_free(buf);
+		g_set_error(err, SKIN_ERROR, SKIN_ERROR_INVALID,
+		            _("Unable to load background image"));
 		return -1;
 	}
 
+	si->jpeg_data = buf;
+	si->jpeg_size = count;
+
 	si->sx = si->sy = 1.0;
-	si->image = g_object_ref(si->raw);
-	g_object_ref(si->raw);
-
-	// Get new skin size
-	si->width = gdk_pixbuf_get_width(si->image);
-	si->height = gdk_pixbuf_get_height(si->image);
-
-	g_object_unref(loader);
+	si->width = 0;
+	si->height = 0;
 
 	return 0;
 }
@@ -282,14 +267,10 @@ int skin_load(SKIN_INFOS *si, const char *filename, GError **err)
 /* Unload skin by freeing allocated memory */
 int skin_unload(SKIN_INFOS *si)
 {
-    if (si->image != NULL) {
-        g_object_unref(si->image);
-        si->image = NULL;
-    }
-
-    if (si->raw) {
-        g_object_unref(si->raw);
-        si->raw = NULL;
+    if (si->jpeg_data) {
+        g_free(si->jpeg_data);
+        si->jpeg_data = NULL;
+        si->jpeg_size = 0;
     }
 
     free(si->name);

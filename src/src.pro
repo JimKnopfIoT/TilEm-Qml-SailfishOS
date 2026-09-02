@@ -56,8 +56,7 @@ LIBS += -L$$OUT_PWD/../tilem-core/emu -ltilememu
 CONFIG += link_pkgconfig
 PKGCONFIG += \
     glib-2.0 \
-    gobject-2.0 \
-    gdk-pixbuf-2.0
+    gobject-2.0
 
 QML_FILES = \
     qml/harbour-tilem.qml \

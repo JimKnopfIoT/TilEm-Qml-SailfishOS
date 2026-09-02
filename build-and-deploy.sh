@@ -6,7 +6,15 @@ set -e
 # Set these to match your SailfishOS device (Settings > Developer tools).
 DEVICE_IP="192.168.0.2"
 DEVICE_USER="root"
-RPM_PATH="RPMS/harbour-tilem-0.3.0-1.aarch64.rpm"
+VERSION=$(sed -n 's/^Version: *//p' rpm/harbour-tilem.spec)
+RELEASE=$(sed -n 's/^Release: *//p' rpm/harbour-tilem.spec)
+RPM_FILE="harbour-tilem-${VERSION}-${RELEASE}.aarch64.rpm"
+RPM_PATH="RPMS/$RPM_FILE"
+
+# Platform SDK location and build target. Override from the environment if your
+# SDK lives elsewhere or you build for a different SailfishOS release.
+SDK="${SDK:-$HOME/SailfishOS-Platform-SDK}"
+TARGET="${TARGET:-SailfishOS-5.2.0.17-aarch64}"
 BINARY_PATH="/usr/bin/harbour-tilem"
 LAST_MD5_FILE=".last_deployed_md5"
 
@@ -14,7 +22,7 @@ echo "=== STEP 1: DEEP CLEANUP ==="
 
 # CRITICAL: Find and delete ALL .o files in SDK container BEFORE wiping directories
 echo "Finding and deleting ALL .o files in SDK container..."
-~/SailfishOS-Platform-SDK/sdk-chroot bash -c "
+"$SDK/sdk-chroot" bash -c "
     # Find and count .o files before deletion
     O_COUNT=\$(find /home/mersdk /home/deploy -name '*.o' 2>/dev/null | wc -l)
     echo \"Found \$O_COUNT .o files in SDK container\"
@@ -45,7 +53,7 @@ echo "Local cleanup complete"
 
 echo ""
 echo "=== STEP 2: BUILD ==="
-~/SailfishOS-Platform-SDK/mb2 -t SailfishOS-5.0.0.62-aarch64 build
+"$SDK/mb2" -t "$TARGET" build
 
 if [ ! -f "$RPM_PATH" ]; then
     echo "ERROR: Build failed - RPM not created"
@@ -89,7 +97,7 @@ echo "Copying RPM to device..."
 scp "$RPM_PATH" $DEVICE_USER@$DEVICE_IP:/tmp/
 
 echo "Installing RPM on device..."
-ssh $DEVICE_USER@$DEVICE_IP "rpm -Uvh --force /tmp/harbour-tilem-0.3.0-1.aarch64.rpm"
+ssh $DEVICE_USER@$DEVICE_IP "rpm -Uvh --force /tmp/$RPM_FILE"
 
 echo ""
 echo "=== STEP 6: VERIFY DEPLOYMENT ==="
