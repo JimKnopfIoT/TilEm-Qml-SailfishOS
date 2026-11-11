@@ -64,7 +64,7 @@ matters.)
 All calculator skins are bundled under `data/skins/*.skn` and install to
 `/usr/share/harbour-tilem/skins/`.
 
-AI assisted development
+LLM assisted development
 
 ## License
 
